@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BharatIndices | Live Equity & Bullion Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        darkbg: '#0b0f19',
+                        cardbg: '#111827',
+                        bordercol: '#1f2937',
+                        brandgreen: '#10b981',
+                        brandred: '#ef4444'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-darkbg text-gray-100 font-sans min-h-screen flex flex-col">
+
+    <!-- Top Navigation Bar -->
+    <header class="border-b border-bordercol bg-cardbg/80 backdrop-blur sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="bg-gradient-to-tr from-amber-500 to-yellow-300 p-2.5 rounded-xl shadow-lg shadow-amber-500/20">
+                    <i class="fa-solid fa-chart-line text-darkbg text-xl font-bold"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-wide text-white">BharatIndices <span class="text-xs bg-amber-500/10 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded-full ml-2">PRO LIVE</span></h1>
+                    <p class="text-xs text-gray-400">Real-Time Indian Equities & Global Bullion Feed</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-4">
+                <div class="flex items-center space-x-2 bg-darkbg border border-bordercol px-3 py-1.5 rounded-lg text-xs">
+                    <span id="market-status-dot" class="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span id="market-status-text" class="text-gray-300 font-medium">Connecting Feed...</span>
+                </div>
+                <button onclick="fetchAllData()" class="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-3 py-2 rounded-lg transition flex items-center space-x-1.5">
+                    <i class="fa-solid fa-rotate"></i>
+                    <span>Refresh Now</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="max-w-7xl mx-auto px-4 py-6 flex-grow w-full space-y-6">
+
+        <!-- Section 1: Indian Equity Indices -->
+        <section>
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-building-columns text-blue-400"></i> Indian Equity Market Indices
+                </h2>
+                <span class="text-xs text-gray-400">NSE / BSE Benchmark Feeds</span>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" id="equity-grid">
+                <!-- Cards injected via JS -->
+            </div>
+        </section>
+
+        <!-- Section 2: Bullion & Precious Metals -->
+        <section>
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-coins text-amber-400"></i> Bullion & Precious Metals (MCX / Spot)
+                </h2>
+                <span class="text-xs text-gray-400">Gold & Silver Live Trackers</span>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" id="bullion-grid">
+                <!-- Cards injected via JS -->
+            </div>
+        </section>
+
+        <!-- Section 3: Live Chart View & Summary Stats -->
+        <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="lg:col-span-2 bg-cardbg border border-bordercol rounded-2xl p-5 shadow-xl">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 id="chart-title" class="font-bold text-white">NIFTY 50 - Intraday Trend Simulation</h3>
+                    <select id="asset-selector" onchange="updateChart()" class="bg-darkbg border border-bordercol text-xs rounded-lg px-2 py-1 text-gray-300 focus:outline-none">
+                        <option value="NIFTY 50">NIFTY 50</option>
+                        <option value="SENSEX">SENSEX</option>
+                        <option value="MCX GOLD">MCX GOLD</option>
+                        <option value="MCX SILVER">MCX SILVER</option>
+                    </select>
+                </div>
+                <div class="h-64">
+                    <canvas id="marketChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Market Highlights / Quick Stats -->
+            <div class="bg-cardbg border border-bordercol rounded-2xl p-5 shadow-xl flex flex-col justify-between">
+                <div>
+                    <h3 class="font-bold text-white mb-3">Market Pulse</h3>
+                    <div class="space-y-3 text-sm">
+                        <div class="flex justify-between py-2 border-b border-bordercol">
+                            <span class="text-gray-400">USD / INR Rate</span>
+                            <span id="stat-usdinr" class="font-semibold text-white">₹86.42</span>
+                        </div>
+                        <div class="flex justify-between py-2 border-b border-bordercol">
+                            <span class="text-gray-400">India VIX (Volatility)</span>
+                            <span id="stat-vix" class="font-semibold text-amber-400">13.85 (+1.4%)</span>
+                        </div>
+                        <div class="flex justify-between py-2 border-b border-bordercol">
+                            <span class="text-gray-400">Gold/Silver Ratio</span>
+                            <span id="stat-gs-ratio" class="font-semibold text-white">82.4</span>
+                        </div>
+                        <div class="flex justify-between py-2">
+                            <span class="text-gray-400">Global Market Mood</span>
+                            <span class="font-semibold text-emerald-400">Bullish 🟢</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-4 bg-darkbg border border-bordercol p-3 rounded-xl text-xs text-gray-400 text-center">
+                    Data updates automatically every 10 seconds. Powered by client-side Web / REST proxies.
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-bordercol py-4 text-center text-xs text-gray-500">
+        &copy; 2026 BharatIndices Portal. Built for real-time equity & commodity tracking.
+    </footer>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        // Mock / Live Simulation Data Engine (Connect your API endpoints here)
+        let marketData = {
+            equity: [
+                { name: "NIFTY 50", value: 24850.35, change: 125.40, percent: 0.51, high: 24900.10, low: 24780.00 },
+                { name: "SENSEX", value: 81620.10, change: 380.25, percent: 0.47, high: 81750.00, low: 81400.00 },
+                { name: "BANK NIFTY", value: 52410.80, change: -140.50, percent: -0.27, high: 52700.00, low: 52300.00 },
+                { name: "INDIA VIX", value: 13.85, change: 0.22, percent: 1.61, high: 14.10, low: 13.50 }
+            ],
+            bullion: [
+                { name: "MCX GOLD", value: 78450.00, change: 420.00, percent: 0.54, unit: "per 10g", high: 78550, low: 78100 },
+                { name: "MCX SILVER", value: 91200.00, change: 1150.00, percent: 1.28, unit: "per 1 kg", high: 91500, low: 90200 },
+                { name: "SPOT GOLD (USD)", value: 2684.50, change: 12.10, percent: 0.45, unit: "per oz", high: 2690, low: 2670 }
+            ]
+        };
+
+        let chartInstance = null;
+
+        function renderDashboard() {
+            // Render Equities
+            const equityGrid = document.getElementById('equity-grid');
+            equityGrid.innerHTML = '';
+            marketData.equity.forEach(item => {
+                const isPositive = item.change >= 0;
+                equityGrid.innerHTML += `
+                    <div class="bg-cardbg border border-bordercol p-4 rounded-2xl shadow-md hover:border-gray-600 transition">
+                        <div class="flex justify-between items-start mb-2">
+                            <span class="text-xs font-bold text-gray-400 tracking-wider">${item.name}</span>
+                            <span class="text-xs px-2 py-0.5 rounded ${isPositive ? 'bg-emerald-500/10 text-brandgreen' : 'bg-red-500/10 text-brandred'} font-semibold">
+                                ${isPositive ? '+' : ''}${item.percent}%
+                            </span>
+                        </div>
+                        <div class="text-2xl font-extrabold text-white mb-2">₹${item.value.toLocaleString('en-IN')}</div>
+                        <div class="flex justify-between text-xs text-gray-400 pt-2 border-t border-bordercol">
+                            <span>Change: <strong class="${isPositive ? 'text-brandgreen' : 'text-brandred'}">${isPositive ? '+' : ''}${item.change}</strong></span>
+                            <span>H: ${item.high.toLocaleString('en-IN')}</span>
+                        </div>
+                    </div>
+                `;
+            });
+
+            // Render Bullion
+            const bullionGrid = document.getElementById('bullion-grid');
+            bullionGrid.innerHTML = '';
+            marketData.bullion.forEach(item => {
+                const isPositive = item.change >= 0;
+                bullionGrid.innerHTML += `
+                    <div class="bg-cardbg border border-bordercol p-4 rounded-2xl shadow-md hover:border-gray-600 transition">
+                        <div class="flex justify-between items-start mb-2">
+                            <span class="text-xs font-bold text-amber-400 tracking-wider">${item.name}</span>
+                            <span class="text-xs text-gray-400">${item.unit}</span>
+                        </div>
+                        <div class="text-2xl font-extrabold text-white mb-2">${item.name.includes('SPOT') ? '$' : '₹'}${item.value.toLocaleString('en-IN')}</div>
+                        <div class="flex justify-between text-xs text-gray-400 pt-2 border-t border-bordercol">
+                            <span>Change: <strong class="${isPositive ? 'text-brandgreen' : 'text-brandred'}">${isPositive ? '+' : ''}${item.change}</strong></span>
+                            <span class="${isPositive ? 'text-brandgreen' : 'text-brandred'} font-semibold">${isPositive ? '+' : ''}${item.percent}%</span>
+                        </div>
+                    </div>
+                `;
+            });
+
+            updateMarketStatus();
+        }
+
+        function updateMarketStatus() {
+            const now = new Date();
+            const day = now.getDay(); // 0 is Sunday, 6 is Saturday
+            const hours = now.getHours();
+            const minutes = now.getMinutes();
+            const currentTime = hours * 60 + minutes;
+
+            const isWeekday = day >= 1 && day <= 5;
+            const isEquityHours = currentTime >= (9 * 60 + 15) && currentTime <= (15 * 60 + 30); // 9:15 AM to 3:30 PM IST
+
+            const statusDot = document.getElementById('market-status-dot');
+            const statusText = document.getElementById('market-status-text');
+
+            if (isWeekday && isEquityHours) {
+                statusDot.className = "h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse";
+                statusText.innerText = "Equities LIVE | Bullion LIVE 24/7";
+            } else {
+                statusDot.className = "h-2.5 w-2.5 rounded-full bg-amber-500";
+                statusText.innerText = "Equities Closed (Weekend/Night) | Bullion Active";
+            }
+        }
+
+        function initChart() {
+            const ctx = document.getElementById('marketChart').getContext('2d');
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['09:15', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '15:30'],
+                    datasets: [{
+                        label: 'Price Action',
+                        data: [24750, 24790, 24820, 24780, 24830, 24860, 24840, 24850],
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.08)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.3,
+                        pointRadius: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { color: '#1f2937' }, ticks: { color: '#9ca3af', font: { size: 10 } } },
+                        y: { grid: { color: '#1f2937' }, ticks: { color: '#9ca3af', font: { size: 10 } } }
+                    }
+                }
+            });
+        }
+
+        function updateChart() {
+            const selected = document.getElementById('asset-selector').value;
+            document.getElementById('chart-title').innerText = `${selected} - Intraday Movement`;
+            
+            // Randomize slight variance for demo demonstration
+            let baseVal = selected === 'SENSEX' ? 81600 : (selected.includes('GOLD') ? 78400 : (selected.includes('SILVER') ? 91000 : 24850));
+            let newData = Array.from({length: 8}, () => baseVal + (Math.random() * 100 - 50));
+            
+            chartInstance.data.datasets[0].data = newData;
+            chartInstance.update();
+        }
+
+        function fetchAllData() {
+            // Simulate minor live websocket jitter tick updates
+            marketData.equity.forEach(item => {
+                let diff = (Math.random() * 10 - 5);
+                item.value = Number((item.value + diff).toFixed(2));
+                item.change = Number((item.change + diff * 0.1).toFixed(2));
+            });
+            marketData.bullion.forEach(item => {
+                let diff = (Math.random() * 30 - 15);
+                item.value = Number((item.value + diff).toFixed(2));
+            });
+            renderDashboard();
+        }
+
+        // Initialize App on Load
+        window.onload = function() {
+            renderDashboard();
+            initChart();
+            // Poll for live mock updates every 10 seconds
+            setInterval(fetchAllData, 10000);
+        };
+    </script>
+</body>
+</html>
